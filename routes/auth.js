@@ -65,4 +65,36 @@ router.post('/login', async (req, res) => {
   }
 });
 
+/*user profile photo*/
+
+function auth(req, res, next) {
+  const header = req.headers.authorization || '';
+  const token  = header.replace('Bearer ', '');
+
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+}
+
+// GET /auth/me-user data (no photo buffer)
+router.get('/me', auth, async (req, res) => {
+  const user = await User.findById(req.user.id, '-password -photo.data').lean();
+  res.json(user);
+});
+
+// GET /auth/me/photo(raw image bytes)
+router.get('/me/photo', auth, async (req, res) => {
+  const user = await User.findById(req.user.id, 'photo').lean();
+  if (!user || !user.photo) return res.sendStatus(404);
+
+  res.set('Content-Type', user.photo.contentType);
+  res.send(user.photo.data);
+});
+
+
+
+
 module.exports = router;
