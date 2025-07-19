@@ -20,9 +20,9 @@ function authMiddleware(req, res, next) {
 // Register new user
 async function register(req, res) {
   try {
-    const { username, password, role, phonenumber, age, kids, email } = req.body;
+    const { username, password, role, phonenumber, address, age, kids, email } = req.body;
 
-    if (!username || !password || !role || !phonenumber || !age || !kids || !email || !req.file) {
+    if (!username || !password || !role || !phonenumber || !address || !age || !kids || !email || !req.file) {
       return res.status(400).json({ error: 'All fields (including photo) are required' });
     }
 
@@ -37,6 +37,7 @@ async function register(req, res) {
       password: hashedPassword,
       role,
       phonenumber,
+      address,
       age: Number(age),
       kids: Number(kids),
       email,
@@ -287,6 +288,33 @@ async function getDonationRequestPhoto(req, res) {
 }
 
 
+async function getClothesRequestById(req, res){
+  try {
+    const request = await ClothesRequest.findById(req.params.id).populate('recipient');
+
+    if (!request) {
+      return res.status(404).json({ message: 'Request not found' });
+    }
+
+    res.json(request);
+  } catch (err) {
+    console.error("Error fetching clothes request by ID:", err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
+
+async function getUserById(req, res){
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  } catch (err) {
+    console.error("Error fetching user:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 
 module.exports = {
@@ -303,4 +331,6 @@ module.exports = {
   createDonationRequest,
   getDonationRequestPhoto,
   getAllDonationRequests,
+  getClothesRequestById,
+  getUserById,
 };
