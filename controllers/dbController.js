@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const ClothesRequest = require('../models/clothesRequest');
 const DonationRequest = require('../models/donationRequest');
+const Storage = require('../models/storage');
 
 // Middleware to check and decode token
 function authMiddleware(req, res, next) {
@@ -205,7 +206,7 @@ async function createClothesRequest(req, res) {
 ////donation request functions
 async function getAllDonationRequests(req, res) {
   try {
-    const requests = await DonationRequest.find()
+    const requests = await DonationRequest.find({ status: 'pending' })
       .populate("donator", "username")
       .lean();
 
@@ -317,6 +318,77 @@ async function getUserById(req, res){
 
 
 
+async function getDonationById(req, res){
+  try {
+    const donationRequest = await DonationRequest.findById(req.params.id).populate("donator");
+    if (!donationRequest) {
+      return res.status(404).json({ message: "Donation request not found" });
+    }
+    res.json(donationRequest);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+async function acceptDonationRequest(req, res){
+  const { id } = req.params;
+
+  try {
+    const request = await DonationRequest.findById(id);
+    if (!request) return res.status(404).json({ error: 'Request not found' });
+
+    if (request.status !== 'pending')
+      return res.status(400).json({ error: 'Request already processed' });
+
+    // Update status to 'accepted'
+    request.status = 'accepted';
+    await request.save();
+
+    // Save item to storage
+    const storedItem = new Storage({
+      donationRequestId: request._id,
+      donator: request.donator,
+      gender: request.gender,
+      age: request.age,
+      type: request.type,
+      size: request.size,
+      color: request.color,
+      classification: request.classification,
+      note: request.note,
+      photos: request.photos,
+    });
+
+    await storedItem.save();
+    res.status(200).json({ message: 'Request accepted and saved to storage' });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+async function rejectDonationRequest(req, res){
+  const { id } = req.params;
+
+  try {
+    const request = await DonationRequest.findById(id);
+    if (!request) return res.status(404).json({ error: 'Request not found' });
+
+    if (request.status !== 'pending')
+      return res.status(400).json({ error: 'Request already processed' });
+
+    request.status = 'rejected';
+    await request.save();
+
+    res.status(200).json({ message: 'Request rejected' });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+
+
 module.exports = {
   authMiddleware,
   workerOnlyMiddleware,
@@ -333,4 +405,7 @@ module.exports = {
   getAllDonationRequests,
   getClothesRequestById,
   getUserById,
+  getDonationById,
+  acceptDonationRequest,
+  rejectDonationRequest,
 };

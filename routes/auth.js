@@ -16,6 +16,9 @@ router.get('/worker/clothes-requests/:id/photo', authController.authMiddleware, 
 router.get('/worker/clothes-request-details/:id',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getClothesRequestById);
 router.get('/worker/user/:id',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getUserById); /////////
 
+router.get('/worker/donation-request-details/:id',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getDonationById);
+router.put('/worker/donation-request/:id/accept',authController.authMiddleware,authController.workerOnlyMiddleware,authController.acceptDonationRequest);
+router.put('/worker/donation-request/:id/reject',authController.authMiddleware,authController.workerOnlyMiddleware,authController.rejectDonationRequest);
 
 
 router.post('/donation-request',upload.array('photos'),authController.authMiddleware,authController.createDonationRequest);
