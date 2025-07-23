@@ -14,7 +14,8 @@ const storageSchema = new mongoose.Schema(
     photos: [{
       data: Buffer,
       contentType: String,
-    }]
+    }],
+    status: { type: String, enum: ['available', 'donated'], default: 'available' }
   },
   { timestamps: true }
 );

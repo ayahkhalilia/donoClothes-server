@@ -128,7 +128,7 @@ async function getAllUsersForWorkers(req, res) {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 async function getClothesRequests(req, res) {
 try {
-    const requests = await ClothesRequest.find().populate('recipient', '-password -photo.data');
+    const requests = await ClothesRequest.find({status:'pending'}).populate('recipient', '-password -photo.data');
     res.status(200).json(requests);
   } catch (err) {
     console.error('Error fetching clothes requests:', err);
@@ -358,6 +358,7 @@ async function acceptDonationRequest(req, res){
       classification: request.classification,
       note: request.note,
       photos: request.photos,
+      status: 'available',
     });
 
     await storedItem.save();
@@ -386,6 +387,76 @@ async function rejectDonationRequest(req, res){
   }
 };
 
+///this func for the donation req details page under the donator info to display how many donations and the pending donations
+async function getDonatorStats(req, res){
+  const { donatorId } = req.params;
+
+  try {
+    const [accepted, pending] = await Promise.all([
+      DonationRequest.countDocuments({ donator: donatorId, status: 'accepted' }),
+      DonationRequest.find({ donator: donatorId, status: 'pending' }).lean()
+    ]);
+
+    res.json({
+      acceptedCount: accepted,
+      pendingRequests: pending.map(r => ({
+        _id: r._id,
+        type: r.type,
+        gender: r.gender,
+        color: r.color
+      }))
+    });
+  } catch (err) {
+    console.error("Error fetching donator stats:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+///check storage function for the clothes request details page in the front
+async function  checkStorage(req, res){
+  try {
+    const { gender, age, type, size, color, classification } = req.body;
+
+    const items = await Storage.find({
+      gender,
+      age,
+      type,
+      size,
+      color,
+      classification,
+      status: 'available'
+    });
+
+    res.json(items);
+  } catch (err) {
+    console.error('Error searching storage:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/////this is a function for selecting items in the clothes request details page
+async function selectClothes(req, res) {
+  const { itemIds, clothesRequestId } = req.body;
+
+  try {
+    await Storage.updateMany(
+      { _id: { $in: itemIds }, status: 'available' },
+      { $set: { status: 'donated' } }
+    );
+
+    if (clothesRequestId) {
+      await ClothesRequest.findByIdAndUpdate(clothesRequestId, {
+        status: "fulfilled"
+      });
+    }
+
+    res.json({ message: 'Items updated successfully' });
+  } catch (err) {
+    console.error('Error updating storage items:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 
 
 
@@ -408,4 +479,7 @@ module.exports = {
   getDonationById,
   acceptDonationRequest,
   rejectDonationRequest,
+  getDonatorStats,
+  checkStorage,
+  selectClothes,
 };
