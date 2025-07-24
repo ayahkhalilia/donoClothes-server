@@ -4,6 +4,7 @@ const User = require('../models/User');
 const ClothesRequest = require('../models/clothesRequest');
 const DonationRequest = require('../models/donationRequest');
 const Storage = require('../models/storage');
+const Branch= require('../models/branch');
 
 // Middleware to check and decode token
 function authMiddleware(req, res, next) {
@@ -457,6 +458,46 @@ async function selectClothes(req, res) {
   }
 }
 
+//fetch branch info functions
+async function getBranch (req, res){
+  try {
+    const branch = await Branch.findOne(); 
+    res.json(branch);
+  } catch (err) {
+    console.error("Error fetching branch:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+async function getBranchPhoto(req, res) {
+  try {
+    const branch = await Branch.findOne();
+
+    if (!branch || !branch.photo || !branch.photo.data) {
+      return res.sendStatus(404); 
+    }
+
+    res.set("Content-Type", branch.photo.contentType);
+    res.send(branch.photo.data);
+  } catch (err) {
+    console.error("Error fetching branch photo:", err);
+    res.sendStatus(500); 
+  }
+}
+
+
+///////logout function
+async function logout(req, res){
+  try {
+    res.status(200).json({ message: "Logout successful on client" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ message: "Logout failed. Please try again." });
+  }
+};
+
+
 
 
 
@@ -482,4 +523,7 @@ module.exports = {
   getDonatorStats,
   checkStorage,
   selectClothes,
+  getBranch,
+  getBranchPhoto,
+  logout,
 };

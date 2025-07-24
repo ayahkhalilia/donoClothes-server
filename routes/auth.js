@@ -8,8 +8,12 @@ router.post('/register', upload.single('photo'), authController.register);
 router.post('/login', authController.login);
 router.get('/me', authController.authMiddleware, authController.getUser);
 router.get('/me/photo', authController.authMiddleware, authController.getUserPhoto);
+router.put('/logout',authController.logout);
 
 router.get('/worker/users', authController.authMiddleware, authController.workerOnlyMiddleware, authController.getAllUsersForWorkers);
+
+router.get('/worker/get-branch',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getBranch);
+router.get('/worker/get-branch-photo',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getBranchPhoto);
 
 router.get('/worker/clothes-requests', authController.authMiddleware, authController.workerOnlyMiddleware, authController.getClothesRequests);
 router.get('/worker/clothes-requests/:id/photo', authController.authMiddleware, authController.workerOnlyMiddleware, authController.getClothesRequestUserPhoto);
