@@ -32,4 +32,6 @@ router.get('/worker/donation-requests/:id/photo/:index',authController.authMiddl
 router.get("/worker/donation-requests",authController.authMiddleware,authController.workerOnlyMiddleware,authController.getAllDonationRequests);
 
 
+router.get('/worker/get-all-storage-items',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getAllStorageItems);
+
 module.exports = router;

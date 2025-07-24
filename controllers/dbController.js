@@ -498,6 +498,38 @@ async function logout(req, res){
 };
 
 
+//function to get all items in storage
+async function getAllStorageItems(req, res){
+  try {
+    const storageItems = await Storage.find();
+
+    const formattedItems = storageItems.map(item => ({
+      _id: item._id,
+      donator: item.donator?.username || 'Unknown',
+      gender: item.gender,
+      age: item.age,
+      type: item.type,
+      size: item.size,
+      color: item.color,
+      classification: item.classification,
+      note: item.note,
+      status: item.status,
+      photos: item.photos.map(photo => {
+        if (photo.data && photo.contentType) {
+          const base64 = photo.data.toString('base64');
+          return `data:${photo.contentType};base64,${base64}`;
+        }
+        return null;
+      }).filter(Boolean)
+    }));
+
+    res.json(formattedItems);
+  } catch (err) {
+    console.error('Error fetching storage items:', err);
+    res.status(500).json({ error: 'Failed to fetch storage items' });
+  }
+};
+
 
 
 
@@ -526,4 +558,5 @@ module.exports = {
   getBranch,
   getBranchPhoto,
   logout,
+  getAllStorageItems,
 };
