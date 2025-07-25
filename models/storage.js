@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 
 const storageSchema = new mongoose.Schema(
   {
-    donationRequestId: { type: mongoose.Schema.Types.ObjectId, ref: 'donationRequest', required: true },
-    donator: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    donationRequestId: { type: mongoose.Schema.Types.ObjectId, ref: 'donationRequest', required: false },
+    donator: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
     gender: { type: String, enum: ['boys', 'girls', 'men', 'women'], required: true },
     age: { type: Number, required: true },
     type: { type: String, enum: ['dresses', 'pants', 'shirts', 'jackets', 'shoes'], required: true },

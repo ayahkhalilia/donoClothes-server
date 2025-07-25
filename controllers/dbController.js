@@ -5,6 +5,9 @@ const ClothesRequest = require('../models/clothesRequest');
 const DonationRequest = require('../models/donationRequest');
 const Storage = require('../models/storage');
 const Branch= require('../models/branch');
+const multer = require("multer");
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 // Middleware to check and decode token
 function authMiddleware(req, res, next) {
@@ -559,7 +562,41 @@ async function deleteStorageItem(req, res){
 };
 
 
+async function addItemToStorage(req, res){
+  try {
+    const {
+      gender,
+      age,
+      type,
+      size,
+      color,
+      classification,
+      note
+    } = req.body;
 
+    const newItem = new Storage({
+      donationRequestId: null, 
+      donator: req.user._id,
+      gender,
+      age,
+      type,
+      size,
+      color,
+      classification,
+      note,
+      photos: req.files.map(file => ({
+        data: file.buffer,
+        contentType: file.mimetype,
+      }))
+    });
+
+    await newItem.save();
+    res.status(201).json({ message: "Item added", item: newItem });
+  } catch (err) {
+    console.error("Error adding item:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
 
 
 
@@ -593,4 +630,5 @@ module.exports = {
   getAllStorageItems,
   updateStorageItem,
   deleteStorageItem,
+  addItemToStorage,
 };
