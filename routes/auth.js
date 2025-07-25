@@ -33,5 +33,6 @@ router.get("/worker/donation-requests",authController.authMiddleware,authControl
 
 
 router.get('/worker/get-all-storage-items',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getAllStorageItems);
-
+router.put('/worker/update-storage-item/:id',authController.authMiddleware,authController.workerOnlyMiddleware,authController.updateStorageItem);
+router.delete('/worker/delete-storage-item/:id',authController.authMiddleware,authController.workerOnlyMiddleware,authController.deleteStorageItem);
 module.exports = router;

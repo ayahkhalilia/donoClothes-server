@@ -532,6 +532,38 @@ async function getAllStorageItems(req, res){
 
 
 
+//////update storage item
+async function updateStorageItem (req, res){
+  try {
+    const updatedItem = await Storage.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json(updatedItem);
+  } catch (err) {
+    console.error('Error updating item:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+///////delete storage item
+async function deleteStorageItem(req, res){
+  try {
+    await Storage.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Item deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting item:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+
+
+
+
 
 module.exports = {
   authMiddleware,
@@ -559,4 +591,6 @@ module.exports = {
   getBranchPhoto,
   logout,
   getAllStorageItems,
+  updateStorageItem,
+  deleteStorageItem,
 };
