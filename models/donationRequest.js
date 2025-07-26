@@ -14,7 +14,9 @@ const donationRequestSchema = new mongoose.Schema(
       data: Buffer,
       contentType: String,
     }],
-    status: { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' }
+    status: { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' },
+    availablePickupDates: [{ type: Date, required: true }],
+    selectedPickupDate: { type: Date } 
   },
   { timestamps: true }
 );

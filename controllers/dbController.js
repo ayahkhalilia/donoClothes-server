@@ -245,12 +245,17 @@ async function createDonationRequest(req, res) {
       size,
       color,
       classification,
-      note
+      note,
     } = req.body;
 
     if (!gender || !age || !type || !size || !color || !classification) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+const rawDates = req.body.availablePickupDates || [];
+const availablePickupDates = Array.isArray(rawDates)
+  ? rawDates.map(date => new Date(date))
+  : [new Date(rawDates)];
+console.log(req.body);
 
     const photos = req.files?.map(file => ({
       data: file.buffer,
@@ -267,6 +272,7 @@ async function createDonationRequest(req, res) {
       classification,
       note,
       photos,
+      availablePickupDates
     });
 
     res.status(201).json({ message: 'Donation request submitted', request });
@@ -338,6 +344,8 @@ async function getDonationById(req, res){
 
 async function acceptDonationRequest(req, res){
   const { id } = req.params;
+  const { selectedPickupDate } = req.body;
+
 
   try {
     const request = await DonationRequest.findById(id);
@@ -346,8 +354,12 @@ async function acceptDonationRequest(req, res){
     if (request.status !== 'pending')
       return res.status(400).json({ error: 'Request already processed' });
 
-    // Update status to 'accepted'
+  if (!selectedPickupDate) {
+    return res.status(400).json({ error: 'Pickup date is required' });
+  }
+  
     request.status = 'accepted';
+    request.selectedPickupDate = new Date(selectedPickupDate);
     await request.save();
 
     // Save item to storage
@@ -367,9 +379,9 @@ async function acceptDonationRequest(req, res){
 
     await storedItem.save();
     await Alert.create({
-     userId: request.donator,
-     requestId: request._id,
-     message: 'Your donation request has been accepted.',
+      userId: request.donator,
+      requestId: request._id,
+      message: `Your donation request has been accepted. Pickup will be on ${new Date(selectedPickupDate).toLocaleDateString()}.`,
     });
     res.status(200).json({ message: 'Request accepted and saved to storage' });
   } catch (err) {
@@ -394,7 +406,7 @@ async function rejectDonationRequest(req, res){
      requestId: request._id,
      message: 'Your donation request has been rejected.',
     });
-    res.status(200).json({ message: 'Request rejected' });
+    res.status(200).json({ message: 'Request rejected successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }
