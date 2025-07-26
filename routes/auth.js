@@ -3,6 +3,7 @@ const router = express.Router();
 const authController = require('../controllers/dbController');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
+const Alert=require('../models/alert');
 
 router.post('/register', upload.single('photo'), authController.register);
 router.post('/login', authController.login);
@@ -30,11 +31,18 @@ router.get('/worker/donation-request/donator/:donatorId/stats',authController.au
 router.post('/donation-request',upload.array('photos'),authController.authMiddleware,authController.createDonationRequest);
 router.get('/worker/donation-requests/:id/photo/:index',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getDonationRequestPhoto);
 router.get("/worker/donation-requests",authController.authMiddleware,authController.workerOnlyMiddleware,authController.getAllDonationRequests);
-
+router.get('/worker/donation-request/:id/photo', authController.authMiddleware,authController.workerOnlyMiddleware,authController.getAllDonationReqUserPhoto);
 
 router.get('/worker/get-all-storage-items',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getAllStorageItems);
 router.put('/worker/update-storage-item/:id',authController.authMiddleware,authController.workerOnlyMiddleware,authController.updateStorageItem);
 router.delete('/worker/delete-storage-item/:id',authController.authMiddleware,authController.workerOnlyMiddleware,authController.deleteStorageItem);
 router.post('/worker/add-item-to-storage',upload.array('photos'),authController.authMiddleware,authController.workerOnlyMiddleware,authController.addItemToStorage);
+
+
+
+router.get('/alert-bell/:id', authController.authMiddleware, authController.alertBell); 
+router.put('/mark-read/:id', authController.authMiddleware, authController.alertMarkRead); 
+
+
 
 module.exports = router;

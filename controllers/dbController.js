@@ -5,6 +5,7 @@ const ClothesRequest = require('../models/clothesRequest');
 const DonationRequest = require('../models/donationRequest');
 const Storage = require('../models/storage');
 const Branch= require('../models/branch');
+const Alert=require('../models/alert');
 const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -211,27 +212,26 @@ async function createClothesRequest(req, res) {
 async function getAllDonationRequests(req, res) {
   try {
     const requests = await DonationRequest.find({ status: 'pending' })
-      .populate("donator", "username")
+      .populate("donator", "-password -photo.data")
       .lean();
-
-    const formatted = requests.map((r) => ({
-      _id: r._id,
-      donatorName: r.donator?.username || "Unknown",
-      gender: r.gender,
-      age: r.age,
-      type: r.type,
-      size: r.size,
-      color: r.color,
-      classification: r.classification,
-      note: r.note,
-      photoCount: r.photos?.length || 0,
-      createdAt: r.createdAt,
-    }));
-
-    res.json(formatted);
+      res.status(200).json(requests);
   } catch (err) {
     console.error("Failed to fetch donation requests:", err);
     res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+async function getAllDonationReqUserPhoto(req,res) {
+  try{
+    const user=await User.findById(req.params.id);
+    if(!user || !user.photo || !user.photo.data){
+      return res.sendStatus(404);
+    }
+    res.set('Content-Type', user.photo.contentType);
+    res.send(user.photo.data);
+  } catch (err){
+    console.error("Error fetching user photo:", err);
+    res.sendstatus(500);
   }
 }
 
@@ -324,7 +324,7 @@ async function getUserById(req, res){
 
 async function getDonationById(req, res){
   try {
-    const donationRequest = await DonationRequest.findById(req.params.id).populate("donator");
+    const donationRequest = await DonationRequest.findById(req.params.id).populate("donator","_id username");
     if (!donationRequest) {
       return res.status(404).json({ message: "Donation request not found" });
     }
@@ -366,6 +366,11 @@ async function acceptDonationRequest(req, res){
     });
 
     await storedItem.save();
+    await Alert.create({
+     userId: request.donator,
+     requestId: request._id,
+     message: 'Your donation request has been accepted.',
+    });
     res.status(200).json({ message: 'Request accepted and saved to storage' });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
@@ -384,7 +389,11 @@ async function rejectDonationRequest(req, res){
 
     request.status = 'rejected';
     await request.save();
-
+    await Alert.create({
+     userId: request.donator,
+     requestId: request._id,
+     message: 'Your donation request has been rejected.',
+    });
     res.status(200).json({ message: 'Request rejected' });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
@@ -599,7 +608,28 @@ async function addItemToStorage(req, res){
 };
 
 
+///////for alert for the donator pages
+async function alertBell(req,res){
+  const userId = req.params.id;
+  try {
+    const alerts = await Alert.find({ user: userId }).sort({ createdAt: -1 });
+    res.json(alerts);
+  } catch (err) {
+    console.error("Failed to get alerts:", err);
+    res.status(500).json({ error: "Failed to get alerts" });
+  }
+};
 
+async function alertMarkRead(req,res){
+  const userId = req.params.id;
+  try {
+    await Alert.updateMany({ user: userId, read: false }, { $set: { read: true } });
+    res.sendStatus(200);
+  } catch (err) {
+    console.error("Failed to mark alerts as read:", err);
+    res.status(500).json({ error: "Failed to mark alerts as read" });
+  }
+};
 
 
 module.exports = {
@@ -616,6 +646,7 @@ module.exports = {
   createDonationRequest,
   getDonationRequestPhoto,
   getAllDonationRequests,
+  getAllDonationReqUserPhoto,
   getClothesRequestById,
   getUserById,
   getDonationById,
@@ -631,4 +662,6 @@ module.exports = {
   updateStorageItem,
   deleteStorageItem,
   addItemToStorage,
+  alertBell,
+  alertMarkRead,
 };
