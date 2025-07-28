@@ -6,6 +6,7 @@ const DonationRequest = require('../models/donationRequest');
 const Storage = require('../models/storage');
 const Branch= require('../models/branch');
 const Alert=require('../models/alert');
+const Logo = require('../models/logo');
 const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -482,6 +483,36 @@ async function selectClothes(req, res) {
   }
 }
 
+//to get the photo for the item in storage 
+async function getStoragePhoto(req, res) {
+  const { itemId, index } = req.params;
+
+  try {
+    const item = await Storage.findById(itemId);
+    if (!item || !item.photos || item.photos.length === 0) {
+      return res.status(404).send("No photos found");
+    }
+
+    const photoIndex = parseInt(index, 10);
+    if (photoIndex < 0 || photoIndex >= item.photos.length) {
+      return res.status(404).send("Photo index out of range");
+    }
+
+    const photo = item.photos[photoIndex];
+    res.set("Content-Type", photo.contentType);
+    res.send(photo.data);
+  } catch (err) {
+    console.error("Error getting storage photo:", err);
+    res.status(500).send("Error retrieving photo");
+  }
+}
+
+
+
+
+
+
+
 //fetch branch info functions
 async function getBranch (req, res){
   try {
@@ -716,7 +747,21 @@ async function searchDonationRequests(req, res) {
   }
 };
 
+//func to get logo
+async function getLogo(req, res){
+  try {
+    const logo = await Logo.findOne().sort({ createdAt: -1 });
+    if (!logo || !logo.photo?.data) {
+      return res.status(404).send('Logo not found');
+    }
 
+    res.set('Content-Type', logo.photo.contentType);
+    res.send(logo.photo.data);
+  } catch (err) {
+    console.error("Error fetching logo:", err);
+    res.status(500).send('Server error');
+  }
+};
 
 
 
@@ -743,6 +788,7 @@ module.exports = {
   getDonatorStats,
   checkStorage,
   selectClothes,
+  getStoragePhoto,
   getBranch,
   getBranchPhoto,
   logout,
@@ -756,4 +802,5 @@ module.exports = {
   countAvailableStorageItems,
   searchClothesRequests,
   searchDonationRequests,
+  getLogo,
 };

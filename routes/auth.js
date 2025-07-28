@@ -22,6 +22,8 @@ router.get('/worker/clothes-request-details/:id',authController.authMiddleware,a
 router.get('/worker/user/:id',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getUserById); /////////
 router.post('/worker/storage/search-matching',authController.authMiddleware,authController.workerOnlyMiddleware,authController.checkStorage);
 router.put('/worker/storage/mark-donated',authController.authMiddleware,authController.workerOnlyMiddleware,authController.selectClothes);
+router.get('/worker/storage/:itemId/photo/:index',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getStoragePhoto);
+
 router.get('/worker/get-recipient-request-history/:recipientId',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getAllClothesRequestsHistory);
 
 
@@ -51,4 +53,5 @@ router.put('/mark-read/:id', authController.authMiddleware, authController.alert
 router.get('/worker/clothes-requests/search',authController.authMiddleware,authController.workerOnlyMiddleware,authController.searchClothesRequests);
 router.get('/worker/donation-requests/search',authController.authMiddleware,authController.workerOnlyMiddleware,authController.searchDonationRequests);
 
+router.get('/logo',authController.authMiddleware,authController.getLogo);
 module.exports = router;
