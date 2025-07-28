@@ -644,6 +644,82 @@ async function alertMarkRead(req,res){
 };
 
 
+
+
+async function getAllClothesRequestsHistory(req,res){
+  try {
+    const { recipientId } = req.params;
+    const requests = await ClothesRequest.find({ recipient: recipientId }).sort({ createdAt: -1 });
+    res.status(200).json(requests);
+  } catch (err) {
+    console.error("Error fetching clothes requests by recipient:", err);
+    res.status(500).json({ error: "Failed to retrieve requests" });
+  }
+};
+
+
+async function countAvailableStorageItems(req, res) {
+  try {
+    const count = await Storage.countDocuments({ status: 'available' });
+    res.json({ availableItems: count });
+  } catch (err) {
+    console.error("Error counting available items:", err);
+    res.status(500).json({ message: "Failed to count available items" });
+  }
+}
+
+
+async function searchClothesRequests(req, res) {
+  try {
+    const query = req.query.query || '';
+    const regex = new RegExp(query, 'i');
+    const allPending = await ClothesRequest.find({ status: 'pending' })
+      .populate('recipient', 'username');
+    const filtered = allPending.filter(r =>
+      regex.test(r.gender) ||
+      regex.test(r.type) ||
+      regex.test(r.size) ||
+      regex.test(r.color) ||
+      regex.test(r.classification) ||
+      regex.test(r.note) ||
+      (r.recipient && regex.test(r.recipient.username)) || 
+      (!isNaN(query) && r.age === Number(query)) 
+    );
+    res.json(filtered);
+  } catch (err) {
+    res.status(500).json({ error: 'Search failed.' });
+  }
+};
+
+
+
+
+async function searchDonationRequests(req, res) { 
+  try {
+    const query = req.query.query || '';
+    const regex = new RegExp(query, 'i');
+    const allPending = await DonationRequest.find({ status: 'pending' })
+      .populate('donator', 'username');
+    const filtered = allPending.filter(r =>
+      regex.test(r.gender) ||
+      regex.test(r.type) ||
+      regex.test(r.size) ||
+      regex.test(r.color) ||
+      regex.test(r.classification) ||
+      regex.test(r.note) ||
+      (r.donator && regex.test(r.donator.username)) || 
+      (!isNaN(query) && r.age === Number(query))
+    );
+    res.json(filtered);
+  } catch (err) {
+    res.status(500).json({ error: 'Search failed.' });
+  }
+};
+
+
+
+
+
 module.exports = {
   authMiddleware,
   workerOnlyMiddleware,
@@ -676,4 +752,8 @@ module.exports = {
   addItemToStorage,
   alertBell,
   alertMarkRead,
+  getAllClothesRequestsHistory,
+  countAvailableStorageItems,
+  searchClothesRequests,
+  searchDonationRequests,
 };
