@@ -54,4 +54,6 @@ router.get('/worker/clothes-requests/search',authController.authMiddleware,authC
 router.get('/worker/donation-requests/search',authController.authMiddleware,authController.workerOnlyMiddleware,authController.searchDonationRequests);
 
 router.get('/logo',authController.authMiddleware,authController.getLogo);
+router.get('/worker/storage/shortage', authController.authMiddleware, authController.workerOnlyMiddleware, authController.getRecentStorageShortage);
+router.get('/worker/clothes-requests/:id/common',authController.authMiddleware,authController.workerOnlyMiddleware,authController.commonClotheReq);
 module.exports = router;

@@ -10,6 +10,7 @@ const Logo = require('../models/logo');
 const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+const mongoose = require('mongoose');
 
 // Middleware to check and decode token
 function authMiddleware(req, res, next) {
@@ -764,6 +765,81 @@ async function getLogo(req, res){
 };
 
 
+//function for recent storage shortage
+async function getRecentStorageShortage(req, res) {
+  try {
+    const threshold = 3; 
+
+    const shortages = await Storage.aggregate([
+      {
+        $match: { status: 'available' } 
+      },
+      {
+        $group: {
+          _id: {
+            type: "$type",
+            gender: "$gender",
+            size: "$size",
+            color: "$color",
+            classification: "$classification"
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $match: { count: { $lte: threshold } }
+      },
+      {
+        $sort: { count: 1 }
+      }
+    ]);
+
+    res.json(shortages);
+  } catch (err) {
+    console.error("Failed to get shortages", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+//common clothes requests for recipient in the clothesreqdetails page
+async function commonClotheReq(req, res) {
+  try {
+    const recipientId = req.params.id;
+
+    const objectId = new mongoose.Types.ObjectId(recipientId);
+
+    const results = await ClothesRequest.aggregate([
+      { $match: { recipient: objectId } },
+      {
+        $facet: {
+          genderCounts: [
+            { $group: { _id: "$gender", count: { $sum: 1 } } },
+            { $match: { count: { $gt: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 1 }
+          ],
+          sizeCounts: [
+            { $group: { _id: "$size", count: { $sum: 1 } } },
+            { $match: { count: { $gt: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 1 }
+          ]
+        }
+      }
+    ]);
+
+    const gender = results[0].genderCounts[0]?._id || null;
+    const size = results[0].sizeCounts[0]?._id || null;
+
+    res.json({ gender, size });
+  } catch (err) {
+    console.error("Error getting common gender and size:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+
+
 
 module.exports = {
   authMiddleware,
@@ -803,4 +879,6 @@ module.exports = {
   searchClothesRequests,
   searchDonationRequests,
   getLogo,
+  getRecentStorageShortage,
+  commonClotheReq,
 };
