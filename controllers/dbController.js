@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const ClothesRequest = require('../models/clothesRequest');
+const DonateNeeds = require('../models/Need');
 const DonationRequest = require('../models/donationRequest');
 const Storage = require('../models/storage');
 const Branch= require('../models/branch');
