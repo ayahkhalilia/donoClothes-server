@@ -7,9 +7,11 @@ const DonationRequest = require('../models/donationRequest');
 const Storage = require('../models/storage');
 const Branch= require('../models/branch');
 const Alert=require('../models/alert');
+const Logo = require('../models/logo');
 const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+const mongoose = require('mongoose');
 
 // Middleware to check and decode token
 function authMiddleware(req, res, next) {
@@ -483,6 +485,36 @@ async function selectClothes(req, res) {
   }
 }
 
+//to get the photo for the item in storage 
+async function getStoragePhoto(req, res) {
+  const { itemId, index } = req.params;
+
+  try {
+    const item = await Storage.findById(itemId);
+    if (!item || !item.photos || item.photos.length === 0) {
+      return res.status(404).send("No photos found");
+    }
+
+    const photoIndex = parseInt(index, 10);
+    if (photoIndex < 0 || photoIndex >= item.photos.length) {
+      return res.status(404).send("Photo index out of range");
+    }
+
+    const photo = item.photos[photoIndex];
+    res.set("Content-Type", photo.contentType);
+    res.send(photo.data);
+  } catch (err) {
+    console.error("Error getting storage photo:", err);
+    res.status(500).send("Error retrieving photo");
+  }
+}
+
+
+
+
+
+
+
 //fetch branch info functions
 async function getBranch (req, res){
   try {
@@ -645,6 +677,171 @@ async function alertMarkRead(req,res){
 };
 
 
+
+
+async function getAllClothesRequestsHistory(req,res){
+  try {
+    const { recipientId } = req.params;
+    const requests = await ClothesRequest.find({ recipient: recipientId }).sort({ createdAt: -1 });
+    res.status(200).json(requests);
+  } catch (err) {
+    console.error("Error fetching clothes requests by recipient:", err);
+    res.status(500).json({ error: "Failed to retrieve requests" });
+  }
+};
+
+
+async function countAvailableStorageItems(req, res) {
+  try {
+    const count = await Storage.countDocuments({ status: 'available' });
+    res.json({ availableItems: count });
+  } catch (err) {
+    console.error("Error counting available items:", err);
+    res.status(500).json({ message: "Failed to count available items" });
+  }
+}
+
+
+async function searchClothesRequests(req, res) {
+  try {
+    const query = req.query.query || '';
+    const regex = new RegExp(query, 'i');
+    const allPending = await ClothesRequest.find({ status: 'pending' })
+      .populate('recipient', 'username');
+    const filtered = allPending.filter(r =>
+      regex.test(r.gender) ||
+      regex.test(r.type) ||
+      regex.test(r.size) ||
+      regex.test(r.color) ||
+      regex.test(r.classification) ||
+      regex.test(r.note) ||
+      (r.recipient && regex.test(r.recipient.username)) || 
+      (!isNaN(query) && r.age === Number(query)) 
+    );
+    res.json(filtered);
+  } catch (err) {
+    res.status(500).json({ error: 'Search failed.' });
+  }
+};
+
+
+
+
+async function searchDonationRequests(req, res) { 
+  try {
+    const query = req.query.query || '';
+    const regex = new RegExp(query, 'i');
+    const allPending = await DonationRequest.find({ status: 'pending' })
+      .populate('donator', 'username');
+    const filtered = allPending.filter(r =>
+      regex.test(r.gender) ||
+      regex.test(r.type) ||
+      regex.test(r.size) ||
+      regex.test(r.color) ||
+      regex.test(r.classification) ||
+      regex.test(r.note) ||
+      (r.donator && regex.test(r.donator.username)) || 
+      (!isNaN(query) && r.age === Number(query))
+    );
+    res.json(filtered);
+  } catch (err) {
+    res.status(500).json({ error: 'Search failed.' });
+  }
+};
+
+//func to get logo
+async function getLogo(req, res){
+  try {
+    const logo = await Logo.findOne().sort({ createdAt: -1 });
+    if (!logo || !logo.photo?.data) {
+      return res.status(404).send('Logo not found');
+    }
+
+    res.set('Content-Type', logo.photo.contentType);
+    res.send(logo.photo.data);
+  } catch (err) {
+    console.error("Error fetching logo:", err);
+    res.status(500).send('Server error');
+  }
+};
+
+
+//function for recent storage shortage
+async function getRecentStorageShortage(req, res) {
+  try {
+    const threshold = 3; 
+
+    const shortages = await Storage.aggregate([
+      {
+        $match: { status: 'available' } 
+      },
+      {
+        $group: {
+          _id: {
+            type: "$type",
+            gender: "$gender",
+            size: "$size",
+            color: "$color",
+            classification: "$classification"
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $match: { count: { $lte: threshold } }
+      },
+      {
+        $sort: { count: 1 }
+      }
+    ]);
+
+    res.json(shortages);
+  } catch (err) {
+    console.error("Failed to get shortages", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+//common clothes requests for recipient in the clothesreqdetails page
+async function commonClotheReq(req, res) {
+  try {
+    const recipientId = req.params.id;
+
+    const objectId = new mongoose.Types.ObjectId(recipientId);
+
+    const results = await ClothesRequest.aggregate([
+      { $match: { recipient: objectId } },
+      {
+        $facet: {
+          genderCounts: [
+            { $group: { _id: "$gender", count: { $sum: 1 } } },
+            { $match: { count: { $gt: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 1 }
+          ],
+          sizeCounts: [
+            { $group: { _id: "$size", count: { $sum: 1 } } },
+            { $match: { count: { $gt: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 1 }
+          ]
+        }
+      }
+    ]);
+
+    const gender = results[0].genderCounts[0]?._id || null;
+    const size = results[0].sizeCounts[0]?._id || null;
+
+    res.json({ gender, size });
+  } catch (err) {
+    console.error("Error getting common gender and size:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+
+
+
 module.exports = {
   authMiddleware,
   workerOnlyMiddleware,
@@ -668,6 +865,7 @@ module.exports = {
   getDonatorStats,
   checkStorage,
   selectClothes,
+  getStoragePhoto,
   getBranch,
   getBranchPhoto,
   logout,
@@ -677,4 +875,11 @@ module.exports = {
   addItemToStorage,
   alertBell,
   alertMarkRead,
+  getAllClothesRequestsHistory,
+  countAvailableStorageItems,
+  searchClothesRequests,
+  searchDonationRequests,
+  getLogo,
+  getRecentStorageShortage,
+  commonClotheReq,
 };

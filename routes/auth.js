@@ -22,6 +22,13 @@ router.get('/worker/clothes-request-details/:id',authController.authMiddleware,a
 router.get('/worker/user/:id',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getUserById); /////////
 router.post('/worker/storage/search-matching',authController.authMiddleware,authController.workerOnlyMiddleware,authController.checkStorage);
 router.put('/worker/storage/mark-donated',authController.authMiddleware,authController.workerOnlyMiddleware,authController.selectClothes);
+router.get('/worker/storage/:itemId/photo/:index',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getStoragePhoto);
+
+router.get('/worker/get-recipient-request-history/:recipientId',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getAllClothesRequestsHistory);
+
+
+router.get('/worker/count-items-in-storage',authController.authMiddleware,authController.workerOnlyMiddleware,authController.countAvailableStorageItems);
+
 
 router.get('/worker/donation-request-details/:id',authController.authMiddleware,authController.workerOnlyMiddleware,authController.getDonationById);
 router.put('/worker/donation-request/:id/accept',authController.authMiddleware,authController.workerOnlyMiddleware,authController.acceptDonationRequest);
@@ -39,10 +46,14 @@ router.delete('/worker/delete-storage-item/:id',authController.authMiddleware,au
 router.post('/worker/add-item-to-storage',upload.array('photos'),authController.authMiddleware,authController.workerOnlyMiddleware,authController.addItemToStorage);
 
 
-
 router.get('/alert-bell/:id', authController.authMiddleware, authController.alertBell); 
 router.put('/mark-read/:id', authController.authMiddleware, authController.alertMarkRead); 
 
 
+router.get('/worker/clothes-requests/search',authController.authMiddleware,authController.workerOnlyMiddleware,authController.searchClothesRequests);
+router.get('/worker/donation-requests/search',authController.authMiddleware,authController.workerOnlyMiddleware,authController.searchDonationRequests);
 
+router.get('/logo',authController.authMiddleware,authController.getLogo);
+router.get('/worker/storage/shortage', authController.authMiddleware, authController.workerOnlyMiddleware, authController.getRecentStorageShortage);
+router.get('/worker/clothes-requests/:id/common',authController.authMiddleware,authController.workerOnlyMiddleware,authController.commonClotheReq);
 module.exports = router;
