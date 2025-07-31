@@ -46,8 +46,8 @@ router.delete('/worker/delete-storage-item/:id',authController.authMiddleware,au
 router.post('/worker/add-item-to-storage',upload.array('photos'),authController.authMiddleware,authController.workerOnlyMiddleware,authController.addItemToStorage);
 
 
-router.get('/alert-bell/:id', authController.authMiddleware, authController.alertBell); 
-router.put('/mark-read/:id', authController.authMiddleware, authController.alertMarkRead); 
+router.get('/alert-bell/:userId', authController.authMiddleware, authController.alertBell); 
+router.put('/mark-read/:userId', authController.authMiddleware, authController.alertMarkRead); 
 
 
 router.get('/worker/clothes-requests/search',authController.authMiddleware,authController.workerOnlyMiddleware,authController.searchClothesRequests);

@@ -654,9 +654,9 @@ async function addItemToStorage(req, res){
 
 ///////for alert for the donator pages
 async function alertBell(req,res){
-  const userId = req.params.id;
   try {
-    const alerts = await Alert.find({ user: userId }).sort({ createdAt: -1 });
+    const userId = req.params.userId;
+    const alerts = await Alert.find({ userId }).sort({ createdAt: -1 });
     res.json(alerts);
   } catch (err) {
     console.error("Failed to get alerts:", err);
